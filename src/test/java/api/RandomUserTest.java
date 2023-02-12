@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.*;
 public class RandomUserTest {
     private static final String URL = "https://randomuser.me/api/";
 
+    // Сценарий - Получение случайно сгенерированного пользователя без указания дополнительных параметров
     @Test
     public void successfulGetOneRandomUser() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
@@ -47,6 +48,7 @@ public class RandomUserTest {
         Assertions.assertTrue(info.getVersion().equals("1.4"));
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя с указанным гендером
     @ParameterizedTest
     @ValueSource(strings = {"male", "female"})
     public void getRandomUserWithSpecifiedGender(String specifiedGender) {
@@ -62,6 +64,7 @@ public class RandomUserTest {
         Assertions.assertEquals(specifiedGender, randomUser.getGender());
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя с указанной национальностью
     @ParameterizedTest
     @ValueSource(strings = {
             "AU", "BR", "CA",
@@ -84,7 +87,10 @@ public class RandomUserTest {
         Assertions.assertEquals(specifiedNationality, randomUser.getNat());
     }
 
-    // Комбинации сгенерированы с помощью техники попарного тестирования
+    /*
+    * Сценарий - Получение случайно сгенерированного пользователя с специфичным паролем
+    * Комбинации сгенерированы с помощью техники попарного тестирования
+    * */
     @ParameterizedTest
     @ValueSource(strings = {
             "upper,lower,special,number,1-10",
@@ -120,6 +126,7 @@ public class RandomUserTest {
         }
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя с указанным сидом
     @ParameterizedTest
     @ValueSource(strings = {
             "123",
@@ -140,6 +147,7 @@ public class RandomUserTest {
 
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя старой версией API
     @Test
     public void getRandomUserWithOldAPIVersion() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
@@ -153,6 +161,7 @@ public class RandomUserTest {
         Assertions.assertEquals("1.3", info.getVersion());
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя с указанной страницей
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 3})
     public void getRandomUserWithSpecifiedPage(int page) {
@@ -170,6 +179,7 @@ public class RandomUserTest {
         Assertions.assertEquals(page, info.getPage());
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя с несколькими указанными параметрами
     @Test
     public void getRandomUserWithSeveralParamsSpecified() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
@@ -188,7 +198,7 @@ public class RandomUserTest {
         Assertions.assertTrue(randomUser.getLogin().getPassword().matches("^([a-z]|\\d)*$"));
     }
 
-
+    // Сценарий - Получение случайно сгенерированного пользователя с исключенными полями
     @ParameterizedTest
     @ValueSource(strings = {"gender,name,location,email,login,registered",
                             "dob,phone,cell,id,picture,nat"})
@@ -234,6 +244,7 @@ public class RandomUserTest {
         }
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя только с включенными полями
     @ParameterizedTest
     @ValueSource(strings = {"gender,name,location,email,login,registered",
             "dob,phone,cell,id,picture,nat"})
@@ -279,6 +290,7 @@ public class RandomUserTest {
         }
     }
 
+    // Сценарий - Получение случайно сгенерированного пользователя в указанном формате
     @ParameterizedTest
     @ValueSource(strings = {"csv", "yaml", "xml", "json"})
     public void getRandomUserInSpecifiedFormat(String specifiedFormat) {
@@ -304,6 +316,7 @@ public class RandomUserTest {
         }
     }
 
+    // Сценарий - Получаем ошибку при отправке запроса с неверным методом
     @Test
     public void errorAfterIncorrectMethodSend() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationNOTFOUND404());
@@ -325,6 +338,7 @@ public class RandomUserTest {
                 .delete();
     }
 
+    // Сценарий - Неверно указанное название параметра в запросе игнорируется
     @Test
     public void getRandomUserWithIncorrectlySpecifiedParamName() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
@@ -351,6 +365,7 @@ public class RandomUserTest {
         assertThat(randomUser.getLocation().getTimezone()).hasNoNullFieldsOrProperties();
     }
 
+    // Сценарий - Неверно указанное возможное значение параметра в запросе игнорируется
     @Test
     public void getRandomUserWithIncorrectlySpecifiedParamValue() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
