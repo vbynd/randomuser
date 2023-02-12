@@ -27,9 +27,9 @@ public class Specifications {
                 .build();
     }
 
-    public static ResponseSpecification responseSpecificationMETHODNOTALLOWED405() {
+    public static ResponseSpecification responseSpecificationNOTFOUND404() {
         return new ResponseSpecBuilder()
-                .expectStatusCode(405)
+                .expectStatusCode(404)
                 .build();
     }
     public static void installSpecification(RequestSpecification requestSpecification, ResponseSpecification responseSpecification) {

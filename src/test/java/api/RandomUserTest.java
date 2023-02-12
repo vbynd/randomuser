@@ -2,6 +2,7 @@ package api;
 
 import api.PojoClasses.*;
 import io.restassured.path.json.JsonPath;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,48 +29,17 @@ public class RandomUserTest {
         Result randomUser = response.getList("results", Result.class).get(0);
         Info info = response.getObject("info", Info.class);
 
-        Name name = randomUser.getName();
-        Location location = randomUser.getLocation();
-        Login login = randomUser.getLogin();
-        Dob dob = randomUser.getDob();
-        Registered registered = randomUser.getRegistered();
-        Id id = randomUser.getId();
-        Picture picture = randomUser.getPicture();
-
-        Assertions.assertNotNull(randomUser.getGender());
-        Assertions.assertNotNull(name.getFirst());
-        Assertions.assertNotNull(name.getLast());
-        Assertions.assertNotNull(name.getTitle());
-        Assertions.assertNotNull(location.getStreet().getName());
-        Assertions.assertNotNull(location.getStreet().getNumber());
-        Assertions.assertNotNull(location.getCity());
-        Assertions.assertNotNull(location.getState());
-        Assertions.assertNotNull(location.getCountry());
-        Assertions.assertNotNull(location.getPostcode());
-        Assertions.assertNotNull(location.getCoordinates().getLatitude());
-        Assertions.assertNotNull(location.getCoordinates().getLongitude());
-        Assertions.assertNotNull(location.getTimezone().getOffset());
-        Assertions.assertNotNull(location.getTimezone().getDescription());
-        Assertions.assertNotNull(randomUser.getEmail());
-        Assertions.assertNotNull(login.getUuid());
-        Assertions.assertNotNull(login.getUsername());
-        Assertions.assertNotNull(login.getPassword());
-        Assertions.assertNotNull(login.getSalt());
-        Assertions.assertNotNull(login.getMd5());
-        Assertions.assertNotNull(login.getSha1());
-        Assertions.assertNotNull(login.getSha256());
-        Assertions.assertNotNull(dob.getDate());
-        Assertions.assertNotNull(dob.getDate());
-        Assertions.assertNotNull(registered.getAge());
-        Assertions.assertNotNull(registered.getDate());
-        Assertions.assertNotNull(randomUser.getPhone());
-        Assertions.assertNotNull(randomUser.getCell());
-        Assertions.assertNotNull(id.getName());
-        Assertions.assertNotNull(id.getValue());
-        Assertions.assertNotNull(picture.getLarge());
-        Assertions.assertNotNull(picture.getMedium());
-        Assertions.assertNotNull(picture.getThumbnail());
-        Assertions.assertNotNull(randomUser.getNat());
+        assertThat(randomUser).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLogin()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getName()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getDob()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getRegistered()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getId()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getPicture()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation().getStreet()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation().getCoordinates()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation().getTimezone()).hasNoNullFieldsOrProperties();
 
         Assertions.assertNotNull(info.getSeed());
         Assertions.assertEquals(1, info.getResults());
@@ -167,6 +137,7 @@ public class RandomUserTest {
         assertThat(randomUserOne).isEqualToComparingFieldByFieldRecursively(randomUserTwo);
         assertThat(randomUserTwo).isEqualToComparingFieldByFieldRecursively(randomUserThree);
         assertThat(randomUserOne).hasNoNullFieldsOrProperties();
+
     }
 
     @Test
@@ -306,5 +277,96 @@ public class RandomUserTest {
                 Assertions.assertNotNull(randomUser.getNat());
                 break;
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"csv", "yaml", "xml", "json"})
+    public void getRandomUserInSpecifiedFormat(String specifiedFormat) {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
+
+        Response response = given()
+                .when()
+                .param("format", specifiedFormat)
+                .get();
+
+        String contentType = response.header("Content-Type");
+
+        switch (specifiedFormat) {
+            case "yaml":
+                Assertions.assertEquals("text/x-yaml; charset=utf-8", contentType);
+                break;
+            case "json":
+                Assertions.assertEquals("application/json; charset=utf-8", contentType);
+                break;
+            default:
+                Assertions.assertEquals("text/" + specifiedFormat + "; charset=utf-8", contentType);
+                break;
+        }
+    }
+
+    @Test
+    public void errorAfterIncorrectMethodSend() {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationNOTFOUND404());
+
+        given()
+                .when()
+                .post();
+
+        given()
+                .when()
+                .put();
+
+        given()
+                .when()
+                .patch();
+
+        given()
+                .when()
+                .delete();
+    }
+
+    @Test
+    public void getRandomUserWithIncorrectlySpecifiedParamName() {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
+
+        Result randomUser = given()
+                .when()
+                .param("basd", "asd")
+                .param("12gyy23", "adsd")
+                .param("idhed", "male")
+                .get()
+                .then()
+                .extract().body().jsonPath().getList("results", Result.class).get(0);
+
+        assertThat(randomUser).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLogin()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getName()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getDob()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getRegistered()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getId()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getPicture()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation().getStreet()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation().getCoordinates()).hasNoNullFieldsOrProperties();
+        assertThat(randomUser.getLocation().getTimezone()).hasNoNullFieldsOrProperties();
+    }
+
+    @Test
+    public void getRandomUserWithIncorrectlySpecifiedParamValue() {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
+
+        String gender = "someGender";
+        String nat = "someNat";
+
+        Result randomUser = given()
+                .when()
+                .param("gender", gender)
+                .param("nat", nat)
+                .get()
+                .then()
+                .extract().body().jsonPath().getList("results", Result.class).get(0);
+
+        Assertions.assertNotEquals(gender, randomUser.getGender());
+        Assertions.assertNotEquals(nat, randomUser.getNat());
     }
 }
