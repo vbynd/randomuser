@@ -1,13 +1,16 @@
 package api;
 
 import api.PojoClasses.*;
+import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.File;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
@@ -15,6 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 
 public class RandomUserTest {
     private static final String URL = "https://randomuser.me/api/";
+    private static final String successfulFullResponseSchema = "./src/test/resources/successfulFullResponseSchema.json";
 
     // Сценарий - Получение случайно сгенерированного пользователя без указания дополнительных параметров
     @Test
@@ -25,27 +29,8 @@ public class RandomUserTest {
                 .when()
                 .get()
                 .then()
+                .assertThat().body(JsonSchemaValidator.matchesJsonSchema(new File(successfulFullResponseSchema)))
                 .extract().body().jsonPath();
-
-        Result randomUser = response.getList("results", Result.class).get(0);
-        Info info = response.getObject("info", Info.class);
-
-        assertThat(randomUser).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getLogin()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getName()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getLocation()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getDob()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getRegistered()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getId()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getPicture()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getLocation().getStreet()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getLocation().getCoordinates()).hasNoNullFieldsOrProperties();
-        assertThat(randomUser.getLocation().getTimezone()).hasNoNullFieldsOrProperties();
-
-        Assertions.assertNotNull(info.getSeed());
-        Assertions.assertEquals(1, info.getResults());
-        Assertions.assertEquals(1, info.getPage());
-        Assertions.assertTrue(info.getVersion().equals("1.4"));
     }
 
     // Сценарий - Получение случайно сгенерированного пользователя с указанным гендером
@@ -61,7 +46,7 @@ public class RandomUserTest {
                 .then()
                 .extract().body().jsonPath().getList("results", Result.class).get(0);
 
-        Assertions.assertEquals(specifiedGender, randomUser.getGender());
+        assertThat(randomUser.getGender()).isEqualTo(specifiedGender);
     }
 
     // Сценарий - Получение случайно сгенерированного пользователя с указанной национальностью
@@ -84,46 +69,75 @@ public class RandomUserTest {
                 .then()
                 .extract().body().jsonPath().getList("results", Result.class).get(0);
 
-        Assertions.assertEquals(specifiedNationality, randomUser.getNat());
+        assertThat(randomUser.getNat()).isEqualTo(specifiedNationality);
     }
 
     /*
     * Сценарий - Получение случайно сгенерированного пользователя с специфичным паролем
     * Комбинации сгенерированы с помощью техники попарного тестирования
     * */
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "upper,lower,special,number,1-10",
-            "upper",
-            "special,10-15",
-            "lower,number"
-    })
-    public void getRandomUserWithSpecifiedPassword(String specifiedPassword) {
+    @Test
+    public void getRandomUserWithSpecifiedPasswordAllCharacters() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
 
         Result randomUser = given()
                 .when()
-                .params("password", specifiedPassword)
+                .params("password", "upper,lower,special,number,1-10")
                 .get()
                 .then()
                 .extract().body().jsonPath().getList("results", Result.class).get(0);
 
         String password = randomUser.getLogin().getPassword();
 
-        switch (specifiedPassword) {
-            case "upper,lower,special,number,1-10":
-                password.matches("^.{1,10}$");
-                break;
-            case "upper":
-                password.matches("^[A-Z]*$");
-                break;
-            case "special,10-15":
-                password.matches("^([^a-zA-Z]\\D){10,15}$");
-                break;
-            case "lower,number":
-                password.matches("^([a-z]|\\d)*$");
-                break;
-        }
+        assertThat(password.matches("^.{1,10}$")).isTrue();
+    }
+
+    @Test
+    public void getRandomUserWithSpecifiedPasswordOnlyUpperCharacters() {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
+
+        Result randomUser = given()
+                .when()
+                .params("password", "upper")
+                .get()
+                .then()
+                .extract().body().jsonPath().getList("results", Result.class).get(0);
+
+        String password = randomUser.getLogin().getPassword();
+
+        assertThat(password.matches("^[A-Z]*$")).isTrue();
+    }
+
+    @Test
+    public void getRandomUserWithSpecifiedPasswordOnlySpecialCharacters() {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
+
+        Result randomUser = given()
+                .when()
+                .params("password", "special,10-15")
+                .get()
+                .then()
+                .extract().body().jsonPath().getList("results", Result.class).get(0);
+
+        String password = randomUser.getLogin().getPassword();
+
+        assertThat(password.matches("^([[^a-zA-Z]&&[\\D]]){10,15}$")).isTrue();
+    }
+
+    @Test
+    public void getRandomUserWithSpecifiedPasswordLowerCharactersAndNumbers() {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
+
+        Result randomUser = given()
+                .when()
+                .params("password", "lower,number")
+                .get()
+                .then()
+                .extract().body().jsonPath().getList("results", Result.class).get(0);
+
+        String password = randomUser.getLogin().getPassword();
+
+        assertThat(password.matches("^([a-z]|\\d)*$")).isTrue();
     }
 
     // Сценарий - Получение случайно сгенерированного пользователя с указанным сидом
@@ -193,55 +207,67 @@ public class RandomUserTest {
                 .then()
                 .extract().body().jsonPath().getList("results", Result.class).get(0);
 
-        Assertions.assertEquals("male", randomUser.getGender());
-        Assertions.assertEquals("US", randomUser.getNat());
-        Assertions.assertTrue(randomUser.getLogin().getPassword().matches("^([a-z]|\\d)*$"));
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(randomUser.getGender()).isEqualTo("male");
+            softly.assertThat(randomUser.getNat()).isEqualTo("US");
+            softly.assertThat(randomUser.getLogin().getPassword().matches("^([a-z]|\\d)*$")).isTrue();
+        });
     }
 
     // Сценарий - Получение случайно сгенерированного пользователя с исключенными полями
-    @ParameterizedTest
-    @ValueSource(strings = {"gender,name,location,email,login,registered",
-                            "dob,phone,cell,id,picture,nat"})
-    public void getRandomUserWithExcludingFields(String excludedFields) {
+
+    @Test
+    public void getRandomUserWithExcludingFieldsGenderNameLocationEmailLoginRegistered() {
         Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
 
         Result randomUser = given()
                 .when()
-                .param("exc", excludedFields)
+                .param("exc", "gender,name,location,email,login,registered")
                 .get()
                 .then()
                 .extract().body().jsonPath().getList("results", Result.class).get(0);
 
-        switch (excludedFields){
-            case "gender,name,location,email,login,registered":
-                Assertions.assertNull(randomUser.getGender());
-                Assertions.assertNull(randomUser.getName());
-                Assertions.assertNull(randomUser.getLocation());
-                Assertions.assertNull(randomUser.getEmail());
-                Assertions.assertNull(randomUser.getLogin());
-                Assertions.assertNull(randomUser.getRegistered());
-                Assertions.assertNotNull(randomUser.getDob());
-                Assertions.assertNotNull(randomUser.getPhone());
-                Assertions.assertNotNull(randomUser.getCell());
-                Assertions.assertNotNull(randomUser.getId());
-                Assertions.assertNotNull(randomUser.getPicture());
-                Assertions.assertNotNull(randomUser.getNat());
-                break;
-            case "dob,phone,cell,id,picture,nat":
-                Assertions.assertNotNull(randomUser.getGender());
-                Assertions.assertNotNull(randomUser.getName());
-                Assertions.assertNotNull(randomUser.getLocation());
-                Assertions.assertNotNull(randomUser.getEmail());
-                Assertions.assertNotNull(randomUser.getLogin());
-                Assertions.assertNotNull(randomUser.getRegistered());
-                Assertions.assertNull(randomUser.getDob());
-                Assertions.assertNull(randomUser.getPhone());
-                Assertions.assertNull(randomUser.getCell());
-                Assertions.assertNull(randomUser.getId());
-                Assertions.assertNull(randomUser.getPicture());
-                Assertions.assertNull(randomUser.getNat());
-                break;
-        }
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(randomUser.getGender()).isNull();
+            softly.assertThat(randomUser.getName()).isNull();
+            softly.assertThat(randomUser.getLocation()).isNull();
+            softly.assertThat(randomUser.getEmail()).isNull();
+            softly.assertThat(randomUser.getLogin()).isNull();
+            softly.assertThat(randomUser.getRegistered()).isNull();
+            softly.assertThat(randomUser.getDob()).isNotNull();
+            softly.assertThat(randomUser.getPhone()).isNotNull();
+            softly.assertThat(randomUser.getCell()).isNotNull();
+            softly.assertThat(randomUser.getId()).isNotNull();
+            softly.assertThat(randomUser.getPicture()).isNotNull();
+            softly.assertThat(randomUser.getNat()).isNotNull();
+        });
+    }
+
+    @Test
+    public void getRandomUserWithExcludingFieldsDobPhoneCellIdPictureNat() {
+        Specifications.installSpecification(Specifications.requestSpecification(URL), Specifications.responseSpecificationOK200());
+
+        Result randomUser = given()
+                .when()
+                .param("exc", "dob,phone,cell,id,picture,nat")
+                .get()
+                .then()
+                .extract().body().jsonPath().getList("results", Result.class).get(0);
+
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(randomUser.getGender()).isNotNull();
+            softly.assertThat(randomUser.getName()).isNotNull();
+            softly.assertThat(randomUser.getLocation()).isNotNull();
+            softly.assertThat(randomUser.getEmail()).isNotNull();
+            softly.assertThat(randomUser.getLogin()).isNotNull();
+            softly.assertThat(randomUser.getRegistered()).isNotNull();
+            softly.assertThat(randomUser.getDob()).isNull();
+            softly.assertThat(randomUser.getPhone()).isNull();
+            softly.assertThat(randomUser.getCell()).isNull();
+            softly.assertThat(randomUser.getId()).isNull();
+            softly.assertThat(randomUser.getPicture()).isNull();
+            softly.assertThat(randomUser.getNat()).isNull();
+        });
     }
 
     // Сценарий - Получение случайно сгенерированного пользователя только с включенными полями
