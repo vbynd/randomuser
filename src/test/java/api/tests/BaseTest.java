@@ -1,4 +1,4 @@
-package api.Tests;
+package api.tests;
 
 import api.specifications.Specifications;
 import org.junit.jupiter.api.BeforeAll;

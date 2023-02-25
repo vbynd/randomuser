@@ -1,4 +1,4 @@
-package api.Tests;
+package api.tests;
 
 import api.responseStructure.Result;
 import org.assertj.core.api.SoftAssertions;

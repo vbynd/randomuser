@@ -1,4 +1,4 @@
-package api.Tests;
+package api.tests;
 
 import api.responseStructure.Result;
 import io.restassured.module.jsv.JsonSchemaValidator;

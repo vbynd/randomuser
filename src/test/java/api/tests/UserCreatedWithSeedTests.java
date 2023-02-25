@@ -1,4 +1,4 @@
-package api.Tests;
+package api.tests;
 
 import api.responseStructure.Result;
 import org.junit.jupiter.params.ParameterizedTest;
