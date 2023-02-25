@@ -1,4 +1,4 @@
-package api.PojoClasses;
+package api.responseStructure;
 
 public class Id {
     private String name;

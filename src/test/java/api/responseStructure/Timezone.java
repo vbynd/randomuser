@@ -1,4 +1,4 @@
-package api.PojoClasses;
+package api.responseStructure;
 
 public class Timezone {
     private String offset;

@@ -1,4 +1,4 @@
-package api.PojoClasses;
+package api.responseStructure;
 
 import java.util.Date;
 
